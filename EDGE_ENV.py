@@ -18,7 +18,6 @@ def initial_state():
     resource = np.append(cpu_state,memory_state) # 拼接到一起
     state = np.append(deploy_state,resource)
     state = np.reshape(state,(1,(MS_NUM+2*RESOURCE_NUM)*NODE_NUM))
-    
     return state
 
 # 更新状态空间
@@ -36,6 +35,7 @@ def update_state(state,action,ms_idx):
 
     return state_new , act_idx
 
+# 未使用
 def assign_pods(state):
     state = np.reshape(state,(MS_NUM,NODE_NUM))
     idx = np.argmax(state,axis=1)
@@ -46,7 +46,14 @@ def assign_pods(state):
         nv[ms_id][node_id] = n_pods
     return nv
 
-# 拉伸部署镜像数
+# instance assign
+def assignInstances(msnum):
+    lam = get_lamda()
+    mu = get_mu()
+    ms_image = [round(lam[i]/mu[i]) + 1 for i in range(msnum)]
+    return ms_image
+
+# 拉伸部署镜像数 future work
 def update_assign(state,nv):
     max_delay = 100000
     state = np.reshape(state,(MS_NUM,NODE_NUM))
@@ -192,6 +199,29 @@ def cal_access_delay(deploy_state):
         access_delay += app_time
     return access_delay
 
+def cal_load(deploy,eta):
+    depstate = np.reshape(deploy,(MS_NUM+2*RESOURCE_NUM,NODE_NUM))
+    ucpu_list = [] # cpu每个节点的利用率
+    umem_list = [] # mem每个节点的利用率
+    for i in range(NODE_NUM):
+        cpuo = depstate[MS_NUM][i] / (depstate[MS_NUM][i]+depstate[MS_NUM+1][i]) #使用/（使用+剩余）
+        memo = depstate[MS_NUM+2][i] / (depstate[MS_NUM+2][i]+depstate[MS_NUM+3][i])
+        ucpu_list.append(cpuo)
+        umem_list.append(memo)
+    ucpu_avg = sum(ucpu_list) / len(ucpu_list) # 平均使用率
+    umem_avg = sum(umem_list) / len(umem_list)
+    # 计算方差
+    vcpu = 0
+    vmem = 0
+    for j in range(NODE_NUM):
+        vcpu += (ucpu_list[j] - ucpu_avg)*(ucpu_list[j] - ucpu_avg)
+        vmem += (umem_list[j] - umem_avg)*(umem_list[j] - umem_avg)
+    vcpu = vcpu / NODE_NUM
+    vmem = vmem / NODE_NUM
+    # 计算加权负载
+    vload = eta*vcpu +(1-eta)*vmem
+
+    return vload
 
 if __name__ == "__main__":
     # state = initial_state()
