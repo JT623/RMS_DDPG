@@ -1,13 +1,31 @@
 import random
 import math
 
-MS_NUM = 10
-APPCLASS = 10
-USER_NUM = 25
-NODE_NUM = 4
-RESOURCE_NUM = 2
+random.seed(1037)  # 随机种子 0 1 1037
+cpu_rate = 1
+memory_rate = 0.01
+eta = 0.8
 
-random.seed(1037)
+# cpu_rate = 0.3
+# memory_rate = 0.7
+
+# 实验一
+USER_NUM = 3 # 用户数目
+
+# 实验二
+MS_NUM = 4  # 微服务数目
+# ms_image = [2,3,3,4] # 4
+# ms_image = [2,2,3,3,3,4] # 6
+# ms_image = [2,2,2,3,3,3,4,4] # 8
+ms_image = [2, 2, 2, 2, 3, 3, 3, 4, 4, 4]  # 微服务镜像数目
+
+# 实验三
+NODE_NUM = 4  # 边缘节点数目
+
+
+APP_CLASS = 10  # 应用种类数目
+RESOURCE_NUM = 2  # 资源种类数目
+
 class MS:
     def __init__(self,id) -> None:
         self.id = id
@@ -45,18 +63,16 @@ class USER:
     def get_request(self,num):
         user_request = []
         for _ in range(num):
-            app_index = 'app'+ str(random.randint(0,APPCLASS-1))
+            app_index = 'app'+ str(random.randint(0,APP_CLASS-1))
             APP_NAME_LIST = getAPP_Service()
             app = APP_NAME_LIST[app_index]
             user_request.append(app)
         return user_request
 
-
-
 # define the app size of different app name
 def AllappList():
     app_list = {}
-    for i in range(APPCLASS):
+    for i in range(APP_CLASS):
         name = "app" + str(i)
         if i<2:
             app_list[name] = 2
@@ -175,11 +191,10 @@ def get_user_request(user_num):
         user_list[item] = item.get_request(random.randint(1,3))
     return user_list
 
-    
 
-if __name__ == "__main__":
+def requests_num():
     usr_req = get_user_request(USER_NUM)
     req_num = 0
     for item in usr_req:
         req_num += len(usr_req[item])
-    print("请求数: ", req_num)
+    return req_num
